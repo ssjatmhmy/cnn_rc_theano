@@ -1,0 +1,6 @@
+# cnn_re
+## How to generate results
+cd demo
+python demo.py --make_data
+python demo.py --train
+python demo.py --predict

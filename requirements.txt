@@ -1,0 +1,7 @@
+python 2.7
+scikit-learn (pip install scikit-learn)
+pandas (pip install -upgrade pandas)
+gensim (pip install --upgrade gensim)
+nltk (pip install -U nltk)
+theano (pip install Theano)
+lasagne 0.1 (pip install lasagne)

@@ -1,0 +1,103 @@
+# -*- coding: utf-8 -*-
+##
+# @brief CNN for relation extraction, based on Theano and Lasagne
+# @author ss
+
+import os
+from sklearn.base import BaseEstimator, ClassifierMixin
+import numpy as np
+import theano   
+import theano.tensor as T
+import lasagne
+    
+
+def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
+    if shuffle:
+        ...
+    for ...:
+        yield inputs[...], targets[...]
+    
+    
+def build_net(input_var, input_shape, window_size):
+    batch_size, channel, height, width = input_shape
+    network = lasagne.layers.InputLayer(shape=(batch_size, channel, height, width), 
+                                     input_var=input_var)
+    network = lasagne.layers.Conv2DLayer(network, num_filters=150, filter_size=(2, width), 
+                                         stride=(1, 1), 
+                                         pad=0, 
+                                         untie_biases=False, 
+                                         W=lasagne.init.GlorotUniform(), 
+                                         b=lasagne.init.Constant(0.), 
+                                         nonlinearity=lasagne.nonlinearities.rectify, 
+                                         flip_filters=True)
+    network = lasagne.layers.MaxPool2DLayer(network, pool_size=(height-window_size+1, 1))
+    network = lasagne.layers.DropoutLayer(network, p=0.5)
+    network = lasagne.layers.DenseLayer(network, num_units=19, 
+                                        nonlinearity=lasagne.nonlinearities.softmax,
+                                        W=lasagne.init.GlorotUniform())
+    return network
+    
+    
+class CNN(object):
+    def __init__(self):
+        pass
+
+    def fit(self, input_shape, window_size):
+        input_var = T.tensor4('inputs')
+        target_var = T.ivector('targets')
+        # Create neural network model
+        network = build_net(input_var, input_shape, window_size)
+        # Create train loss
+        prediction = lasagne.layers.get_output(network)
+        loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
+        loss = loss.mean()
+        # Create valid loss
+        test_prediction = lasagne.layers.get_output(network, deterministic=True)
+        test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
+                                                                target_var)
+        test_loss = test_loss.mean()
+        # Create valid accuracy
+        test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), target_var),
+                  dtype=theano.config.floatX)
+        #
+        params = lasagne.layers.get_all_params(network, trainable=True)
+        updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.01, momentum=0.9)
+        
+        train_fn = theano.function([input_var, target_var], loss, updates=updates)
+        valid_fn = theano.function([input_var, target_var], [test_loss, test_acc])
+        #
+        for epoch in range(num_epochs):
+            # In each epoch, we do a full pass over the training data:
+            train_err = 0
+            train_batches = 0
+            start_time = time.time()
+            for batch in iterate_minibatches(X_train, y_train, 500, shuffle=True):
+                inputs, targets = batch
+                train_err += train_fn(inputs, targets)
+                train_batches += 1
+
+            # And a full pass over the validation data:
+            val_err = 0
+            val_acc = 0
+            val_batches = 0
+            for batch in iterate_minibatches(X_val, y_val, 500, shuffle=False):
+                inputs, targets = batch
+                err, acc = val_fn(inputs, targets)
+                val_err += err
+                val_acc += acc
+                val_batches += 1
+
+            # Then we print the results for this epoch:
+            print("Epoch {} of {} took {:.3f}s".format(
+                epoch + 1, num_epochs, time.time() - start_time))
+            print("  training loss:\t\t{:.6f}".format(train_err / train_batches))
+            print("  validation loss:\t\t{:.6f}".format(val_err / val_batches))
+            print("  validation accuracy:\t\t{:.2f} %".format(
+                val_acc / val_batches * 100))
+
+
+    def transform(self, inputs):
+        outputs = []
+        return outputs
+
+
